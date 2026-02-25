@@ -543,7 +543,51 @@ QUESTION : Quelle est la politique de remboursement ?
 | **Boucle** | Question → Réponse (1 tour) | Peut itérer (réfléchir → agir → observer → réfléchir...) |
 | **Exemple** | FAQ automatique | Assistant qui cherche dans le CRM, vérifie le stock, et envoie un email |
 
-#### 2. Comment fonctionne un agent (boucle ReAct)
+#### 2. Architecture d'un Agent IA
+
+Voici comment un agent est structuré (c'est LE schéma à retenir) :
+
+```
+┌───────────────┐      ┌─────────────────────────────┐      ┌─────────────────┐
+│    INPUT      │      │          AGENT              │      │     OUTPUT      │
+│               │      │                             │      │                 │
+│ • Événements  │─────▶│  ┌─────────────────────┐    │─────▶│ • Messages de   │
+│   système     │      │  │       LLM           │    │      │   l'agent       │
+│ • Messages    │      │  │  (le cerveau)       │    │      │ • Résultats     │
+│   utilisateur │      │  └─────────────────────┘    │      │   des outils    │
+│ • Messages    │      │  ┌─────────────────────┐    │      │                 │
+│   d'agents    │      │  │   Instructions      │    │      └─────────────────┘
+│               │      │  │  (system prompt)    │    │
+└───────────────┘      │  └─────────────────────┘    │
+                       │  ┌─────────────────────┐    │
+                       │  │      Tools          │    │
+                       │  │  (outils dispo)     │    │
+                       │  └──────────┬──────────┘    │
+                       └─────────────┼───────────────┘
+                                     │ ▲
+                                     ▼ │
+                       ┌─────────────────────────────┐
+                       │       TOOL CALLS             │
+                       │                             │
+                       │  🔍 Retrieval (recherche)   │
+                       │  ⚡ Actions (faire qqch)    │
+                       │  🧠 Memory (se souvenir)    │
+                       └─────────────────────────────┘
+```
+
+**Les 3 composants internes de l'agent :**
+- **LLM** : le modèle qui raisonne (GPT-4o, Claude, Mistral...)
+- **Instructions** : le system prompt qui définit son comportement et ses règles
+- **Tools** : la liste des outils que l'agent peut décider d'utiliser
+
+**Les 3 types de Tool Calls :**
+- **Retrieval** (recherche) : chercher dans des docs, une BDD, le web → c'est le RAG
+- **Actions** : faire quelque chose (envoyer un email, créer un ticket, appeler une API)
+- **Memory** : stocker/récupérer des infos d'une conversation précédente
+
+> 💡 L'agent **décide seul** quel outil utiliser, quand, et dans quel ordre. C'est ce qui le distingue d'un workflow rigide.
+
+#### 3. Comment fonctionne un agent (boucle ReAct)
 
 ReAct = **Re**asoning + **Act**ing. L'agent suit une boucle :
 
@@ -566,7 +610,7 @@ BOUCLE DE L'AGENT :
 6. ✅ RÉPONDRE : "Le produit X (Réf P123) est disponible : 5 unités en stock à Lyon."
 ```
 
-#### 3. Les "Tools" (outils) d'un agent
+#### 4. Les "Tools" (outils) d'un agent
 
 Un agent est aussi puissant que ses outils. Voici les catégories d'outils courants :
 
@@ -579,7 +623,7 @@ Un agent est aussi puissant que ses outils. Voici les catégories d'outils coura
 | **Calcul** | Calculator, Code interpreter | "Calcule la marge sur cette commande" |
 | **APIs métier** | ERP, Facturation, RH | "Crée un ticket dans Jira" |
 
-#### 4. Quand utiliser un agent vs un workflow ?
+#### 5. Quand utiliser un agent vs un workflow ?
 
 C'est LA question importante en consulting :
 
@@ -605,7 +649,7 @@ C'est LA question importante en consulting :
 | Synchroniser CRM → Tableau tous les jours | **Workflow** | Processus fixe |
 | "Trouve-moi les 3 meilleurs fournisseurs pour ce besoin" | **Agent** | Nécessite recherche + comparaison + jugement |
 
-#### 5. Les limites des agents (à connaître pour les clients)
+#### 6. Les limites des agents (à connaître pour les clients)
 
 - ⚠️ **Coût** : un agent peut faire 5-10 appels LLM par question (vs 1 pour un chatbot)
 - ⚠️ **Latence** : chaque boucle = quelques secondes supplémentaires
@@ -614,9 +658,13 @@ C'est LA question importante en consulting :
 
 > **Conseil consultant** : commence toujours par un workflow simple. Ajoute un agent uniquement quand la logique conditionnelle devient trop complexe pour un workflow.
 
-### 🔧 Démo (optionnel, 20 min)
+### 🔧 Lab Agent (optionnel, 30 min) — 100% gratuit
 
-**Exercice : Créer un agent dans n8n**
+Tu vas créer et tester un agent IA avec des tools connectés, **sans payer**. Trois options selon tes préférences :
+
+---
+
+**Option A — Agent dans n8n (recommandé si tu as une instance, 30 min)**
 
 1. Crée un nouveau workflow dans n8n
 2. Ajoute un nœud **Chat Trigger** (ou Webhook)
@@ -628,15 +676,90 @@ C'est LA question importante en consulting :
      sur le web et faire des calculs. Utilise-les quand nécessaire.
      Réponds toujours en français.
      ```
-4. Connecte des outils à l'agent :
-   - **Calculator** (nœud n8n)
-   - **HTTP Request** (pour appeler une API, ex: une API météo gratuite)
-5. Teste avec des questions :
-   - "Combien font 1547 × 23.5 ?" → l'agent devrait utiliser le calculateur
-   - "Quel temps fait-il à Paris ?" → l'agent devrait utiliser l'HTTP request
-   - "Raconte-moi une blague" → l'agent ne devrait PAS utiliser d'outil
+4. Connecte **3 outils** à l'agent :
+   - **Calculator** (nœud n8n) → pour les calculs
+   - **HTTP Request** → appeler une API gratuite (ex : `https://api.quotable.io/quotes/random`)
+   - **Wikipedia** (nœud n8n, s'il existe) ou un 2e HTTP Request vers une autre API
+5. Teste avec des questions qui forcent l'agent à **choisir** le bon outil :
+   - "Combien font 1547 × 23.5 ?" → doit utiliser le calculateur
+   - "Donne-moi une citation inspirante" → doit utiliser l'API de citations
+   - "Raconte-moi une blague" → ne devrait PAS utiliser d'outil
+   - "Combien coûtent 15 articles à 23.50€ avec 20% de remise ?" → doit utiliser le calculateur
+6. **Observe dans les logs de l'agent** (c'est la partie la plus importante) :
+   - Quels outils a-t-il choisi ? Pourquoi ?
+   - A-t-il raisonné avant d'agir ? (tu verras la "pensée" de l'agent)
+   - S'est-il trompé d'outil ? → ajuste le system prompt pour le guider
 
-6. Observe dans les logs : quels outils l'agent a-t-il choisi ? A-t-il bien raisonné ?
+---
+
+**Option B — Agent dans Dify.ai (gratuit, rien à installer, 30 min)**
+
+[Dify.ai](https://dify.ai/) est une plateforme gratuite (tier cloud gratuit : 200 messages) pour construire des agents visuellement.
+
+1. Crée un compte sur [cloud.dify.ai](https://cloud.dify.ai/) (gratuit)
+2. Clique **"Create from Blank"** → choisis **"Agent"**
+3. Configure l'agent :
+   - **Model** : choisis un modèle gratuit disponible (GPT-3.5 ou celui proposé)
+   - **Instructions** : colle ce system prompt :
+     ```
+     Tu es un assistant professionnel polyvalent.
+     Tu as accès à des outils. Utilise-les quand la question le nécessite.
+     Si tu n'as pas besoin d'outil, réponds directement.
+     Réponds en français.
+     ```
+4. **Ajoute des Tools** (barre de gauche → "Tools") :
+   - **Web Search** (recherche web intégrée) → activer
+   - **Wikipedia** → activer
+   - **Calculator / Math** → activer
+   - **Current Time** → activer
+5. Teste dans le **Preview** :
+   - "Quel est le président actuel de la France ?" → doit chercher sur le web
+   - "Résume l'article Wikipedia sur le RAG" → doit utiliser Wikipedia
+   - "Quelle heure est-il ?" → doit utiliser Current Time
+   - "Calcule 2^10" → doit utiliser le calculateur
+6. Observe le **panneau de trace** à droite :
+   - Tu vois chaque étape : réflexion → choix d'outil → appel → résultat → réponse
+   - C'est exactement la **boucle ReAct** expliquée plus haut !
+
+> 💡 Dify est un excellent outil pour prototyper un agent AVANT de le construire dans n8n — tu valides le concept rapidement.
+
+---
+
+**Option C — Agent dans ChatGPT "GPTs" (gratuit avec un compte OpenAI, 20 min)**
+
+1. Va sur [chatgpt.com](https://chatgpt.com/)
+2. Menu en haut à gauche → **"Explore GPTs"** → **"Create"**
+3. Dans l'onglet **Configure** :
+   - **Name** : "Mon Assistant de Recherche"
+   - **Instructions** :
+     ```
+     Tu es un assistant de recherche professionnel.
+     Quand on te pose une question factuelle, utilise la recherche web.
+     Quand on te demande d'analyser une image ou un document, utilise tes capacités de vision.
+     Réponds toujours en français, de manière concise.
+     ```
+   - **Capabilities** : active **Web Browsing** ✅ et **Code Interpreter** ✅
+4. Teste dans le preview :
+   - "Quelles sont les dernières nouvelles sur l'IA en France ?" → doit chercher sur le web
+   - "Calcule la moyenne de 23, 45, 67, 89, 12" → doit utiliser Code Interpreter
+5. Observe comment le GPT **choisit dynamiquement** quel outil utiliser
+
+---
+
+**Ce qu'il faut retenir de ce lab**
+
+```
+AGENT = LLM + Instructions + Tools
+
+              ┌── Retrieval (chercher de l'info)     → Web Search, RAG, Wikipedia
+Tool calls ───┼── Actions (faire quelque chose)      → Calculer, envoyer un email, appeler une API
+              └── Memory (se souvenir)               → Chat history, base de données
+
+L'agent DÉCIDE quels outils utiliser en fonction de la question.
+C'est le LLM qui raisonne, pas un workflow pré-programmé.
+```
+
+> Quelque soit l'outil (n8n, Dify, ChatGPT), le **principe est toujours le même**. C'est ça la valeur de comprendre l'architecture plutôt que juste l'outil.
 
 ---
 
@@ -668,6 +791,7 @@ Les LLMs sont trop gros et trop gourmands pour tourner sur un PC classique :
 | **Azure Cosmos DB** | Base NoSQL + vector search intégré | Stockage de chat history + RAG |
 | **Azure AI Document Intelligence** | OCR intelligent, extraction de données de documents | Factures, contrats, formulaires |
 | **Azure Container Apps** | Héberger des apps conteneurisées | Déployer tes solutions IA |
+| **VS Code AI Toolkit** | Extension VS Code gratuite pour télécharger, tester et fine-tuner des modèles IA (locaux ou cloud) | Prototyper rapidement avec des modèles open-source sans quitter ton éditeur |
 
 **AWS**
 
@@ -744,6 +868,28 @@ Le client utilise déjà Microsoft 365 / Azure AD ?
    - L'endpoint est différent (`.openai.azure.com` au lieu de `api.openai.com`)
    - Il faut spécifier un "deployment name" en plus du modèle
    - La sécurité est gérée par Azure (Entra ID, réseau privé possible)
+
+**Exercice bonus : Tester un modèle localement avec VS Code AI Toolkit (gratuit, 15 min)**
+
+[VS Code AI Toolkit](https://marketplace.visualstudio.com/items?itemName=ms-windows-ai-studio.windows-ai-studio) est une extension gratuite de Microsoft qui te permet de tester des modèles IA directement dans VS Code.
+
+1. Installe l'extension **AI Toolkit** dans VS Code (recherche "AI Toolkit" dans les extensions)
+2. Ouvre le panneau AI Toolkit (icône dans la barre latérale)
+3. Va dans **Model Catalog** → parcours les modèles disponibles :
+   - Modèles depuis **Hugging Face** (open-source, gratuits)
+   - Modèles depuis **Azure AI** (certains gratuits, certains payants)
+4. Télécharge un petit modèle (ex : **Phi-3-mini** ou **Mistral 7B**) → il tourne **en local sur ta machine**
+5. Teste-le dans le **Playground intégré** :
+   - Pose une question simple : "Explique le RAG en 2 phrases"
+   - Compare la qualité avec GPT-4o (spoiler : c'est moins bon, mais c'est gratuit et privé)
+6. Observe les avantages :
+   - ✅ **Gratuit** : aucun coût par token
+   - ✅ **Privé** : aucune donnée ne quitte ta machine
+   - ✅ **Hors-ligne** : fonctionne sans internet
+   - ❌ **Qualité** : les petits modèles sont moins performants que GPT-4o
+   - ❌ **Ressources** : nécessite un PC avec suffisamment de RAM (8 Go minimum)
+
+> 💡 **Usage consultant** : AI Toolkit est parfait pour (1) prototyper rapidement un prompt, (2) montrer au client qu'on peut faire tourner de l'IA en local (données sensibles), et (3) comparer les modèles open-source avant de choisir.
 
 ---
 
