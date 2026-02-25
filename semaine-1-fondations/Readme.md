@@ -763,6 +763,310 @@ C'est le LLM qui raisonne, pas un workflow pré-programmé.
 
 ---
 
+### 🔧 Lab Approfondi — Construire un agent complet avec Dify.ai (gratuit, 45 min)
+
+> Ce lab va plus loin que l'Option B ci-dessus. Tu vas construire **une solution IA complète** (base de connaissances + chatbot RAG + agent multi-outils) dans Dify.ai, **sans payer et sans coder**. C'est l'exercice le plus complet de la semaine.
+
+#### Pourquoi Dify.ai est parfait pour apprendre
+
+| Avantage | Détail |
+|----------|--------|
+| 🆓 **100% gratuit** | Tier cloud gratuit : 200 messages, suffisant pour apprendre |
+| 🖱️ **No-code** | Interface visuelle drag & drop, zéro ligne de code |
+| 📦 **Tout-en-un** | LLM + RAG + Agent + Déploiement dans la même plateforme |
+| 🔍 **Traçabilité** | Panneau de trace qui montre chaque décision de l'agent en temps réel |
+| 🌐 **Publiable** | Tu obtiens un chatbot partageable via URL en 1 clic |
+| 🔧 **Open-source** | Le code est open-source, tu peux l'auto-héberger chez un client si besoin |
+
+#### Étape 1 — Créer une base de connaissances (Knowledge Base) (10 min)
+
+C'est le composant **RAG** de ta solution : tu vas uploader des documents pour que l'agent puisse y chercher des réponses.
+
+1. Connecte-toi à [cloud.dify.ai](https://cloud.dify.ai/) (crée un compte si pas encore fait)
+2. Clique sur **"Knowledge"** dans le menu de gauche
+3. Clique **"Create Knowledge"**
+4. **Upload des documents** :
+   - Prépare 2-3 fichiers de test (TXT, PDF, ou Markdown) :
+     - Ex : une FAQ fictive (10 questions/réponses)
+     - Ex : une politique de retour (1-2 pages)
+     - Ex : un catalogue produit simplifié
+   - Tu peux aussi coller du texte directement
+5. Configure l'indexation :
+   - **Chunk size** : 500 (par défaut, c'est bien)
+   - **Overlap** : 50
+   - **Embedding model** : celui proposé par défaut (gratuit dans le tier cloud)
+6. Clique **"Save & Process"** → Dify découpe tes docs en chunks et les vectorise
+7. **Vérifie** :
+   - Va dans la Knowledge Base créée
+   - Tu vois tes documents découpés en chunks
+   - Teste la recherche : tape une question → observe quels chunks remontent
+
+> 💡 Tu viens de construire le **pipeline RAG complet** (documents → chunking → embeddings → vector DB) en 5 clics. C'est exactement ce que tu as appris au Jour 4, mais sans écrire une ligne de code.
+
+#### Étape 2 — Construire un Chatbot RAG (10 min)
+
+1. Retourne à l'accueil → **"Create from Blank"** → choisis **"Chatbot"**
+2. Donne-lui un nom : "Assistant FAQ Client"
+3. Configure :
+   - **Model** : choisis le modèle disponible gratuitement
+   - **Instructions** (system prompt) :
+     ```
+     Tu es l'assistant virtuel de BoutiqueExemple.
+     Tu aides les clients avec leurs questions sur les commandes,
+     les retours et les produits.
+
+     Règles :
+     - Réponds UNIQUEMENT à partir des documents de la base de connaissances
+     - Si tu ne trouves pas l'info, dis : "Je n'ai pas cette information.
+       Souhaitez-vous être mis en contact avec un conseiller ?"
+     - Sois professionnel, amical et concis
+     - Cite la source quand c'est possible
+     ```
+4. **Connecte ta Knowledge Base** :
+   - Dans la section **"Context"** → clique **"Add"** → sélectionne la Knowledge Base de l'étape 1
+5. **Teste dans le Preview** :
+   - Question factuelle → "Quel est le délai de livraison ?" → doit répondre depuis tes docs
+   - Question de synthèse → "Résume votre politique de retour"
+   - Question piège → "Quel est le chiffre d'affaires ?" → doit refuser poliment
+6. Observe le **panneau de trace** :
+   - Tu vois les chunks récupérés par le RAG
+   - Tu vois le prompt final envoyé au LLM (context + question)
+   - Tu comprends exactement comment le RAG fonctionne en vrai
+
+#### Étape 3 — Transformer en Agent Multi-Outils (15 min)
+
+Maintenant, on passe du chatbot (qui ne fait que répondre) à l'**agent** (qui peut agir).
+
+1. Crée une nouvelle app → **"Create from Blank"** → choisis **"Agent"**
+2. Nom : "Agent Commercial Intelligent"
+3. **Instructions** :
+   ```
+   Tu es un agent commercial intelligent pour BoutiqueExemple.
+   Tu as accès à plusieurs outils. Utilise-les intelligemment :
+   - Pour les questions sur les produits/retours → cherche dans la base documentaire
+   - Pour les questions factuelles sur le monde → utilise la recherche web
+   - Pour les calculs de prix/remises → utilise le calculateur
+   - Pour les questions sur la date/heure → utilise l'outil Current Time
+
+   Réponds en français, de manière professionnelle.
+   Propose toujours une action suivante au client.
+   ```
+4. **Ajoute les Tools** :
+   - **Knowledge Retrieval** → connecte ta Knowledge Base
+   - **Web Search** → activer (recherche web intégrée)
+   - **Calculator / Math** → activer
+   - **Current Time** → activer
+5. **Teste l'agent avec des scénarios réalistes** :
+
+   | Question de test | Tool attendu | Vérifie que... |
+   |-----------------|-------------|----------------|
+   | "Quel est votre délai de retour ?" | Knowledge Retrieval | Il cherche dans les docs |
+   | "Combien coûtent 5 articles à 29.90€ avec 15% de remise ?" | Calculator | Il calcule correctement |
+   | "Quelles sont les tendances e-commerce en 2026 ?" | Web Search | Il cherche sur le web |
+   | "On est quel jour aujourd'hui ?" | Current Time | Il utilise l'outil date |
+   | "Raconte-moi une blague" | Aucun | Il répond directement sans outil |
+
+6. **Analyse le panneau de trace** pour chaque question :
+   - 🤔 Quelle a été la **réflexion** de l'agent ?
+   - 🔧 Quel **outil** a-t-il choisi ? Était-ce le bon ?
+   - 📊 Quels **résultats** a-t-il obtenu de l'outil ?
+   - ✅ La **réponse finale** est-elle pertinente ?
+
+> 💡 Ce panneau de trace est **exactement** la boucle ReAct (Réfléchir → Agir → Observer → Répondre) que tu as apprise plus haut. Tu la vois fonctionner en temps réel !
+
+#### Étape 4 — Publier et partager (5 min)
+
+1. Clique **"Publish"** en haut à droite
+2. Active **"Run App"** → tu obtiens une **URL publique**
+3. Ouvre cette URL dans un autre navigateur ou en navigation privée
+4. Tu as maintenant un **chatbot IA fonctionnel** que tu peux montrer à n'importe qui
+5. **Partage le lien** pour tester avec d'autres
+
+> 🎯 **Ce que tu viens de faire** : tu as construit une solution IA complète (RAG + Agent + Interface) en 45 minutes, gratuitement, sans coder. C'est exactement le type de prototype que tu montreras en démo à un prospect.
+
+#### Étape 5 — Ce qu'il faut retenir sur Dify.ai
+
+```
+DIFY.AI — TON OUTIL DE PROTOTYPAGE RAPIDE
+
+Quand utiliser Dify ?
+  ✅ POC / démo rapide pour un client (< 1 jour)
+  ✅ Valider un concept avant de le construire dans n8n
+  ✅ Former un client non-technique à l'IA
+  ✅ Tester différents prompts et modèles
+  ✅ Besoin d'un agent avec RAG intégré rapidement
+
+Quand passer à n8n / autre outil ?
+  ❌ Intégrations complexes (CRM, ERP, emails)
+  ❌ Workflows multi-étapes au-delà du chatbot
+  ❌ Volume important (> 200 messages gratuits)
+  ❌ Personnalisation UI avancée
+
+WORKFLOW CONSULTANT :
+  1. Prototype dans Dify (1h) → montre au client
+  2. Client valide le concept
+  3. Construction dans n8n (production) avec toutes les intégrations
+```
+
+---
+
+### 🔧 Lab Approfondi — Tester et debugger un agent avec VS Code AI Toolkit (gratuit, 30 min)
+
+> VS Code AI Toolkit n'est pas seulement pour tester des modèles (tu verras ça au Jour 6). C'est aussi un outil puissant pour **construire, tester et debugger des agents** directement dans ton éditeur. Ce lab se concentre sur l'aspect agent.
+
+#### Pourquoi AI Toolkit pour les agents ?
+
+| Fonctionnalité | Ce que ça apporte pour les agents |
+|---------------|----------------------------------|
+| **Playground multi-modèles** | Tester le même agent sur Phi, Mistral, GPT, Llama → quel modèle raisonne le mieux ? |
+| **Comparaison côte à côte** | Voir comment 2 modèles choisissent différemment les outils |
+| **GitHub Models (gratuit)** | Accès gratuit à GPT-4o, Mistral Large, Llama via ton compte GitHub |
+| **Modèles locaux (gratuit)** | Tester le raisonnement d'un agent 100% en local, sans API, sans coût |
+| **Agent Inspector** | Visualiser le raisonnement de l'agent étape par étape |
+
+#### Installation et setup (5 min)
+
+1. Ouvre **VS Code**
+2. **Extensions** (Ctrl+Shift+X) → cherche **"AI Toolkit"** → **Install**
+3. L'icône AI Toolkit apparaît dans la barre latérale gauche
+4. Connecte ton **compte GitHub** (gratuit) quand demandé → donne accès aux modèles cloud gratuits
+
+#### Exercice 1 — Tester le raisonnement d'agent sur différents modèles (15 min)
+
+L'idée : un agent est aussi bon que le LLM qui le pilote. Quel modèle **raisonne** le mieux pour choisir les bons outils ?
+
+1. Ouvre le **Playground** dans AI Toolkit
+2. Choisis un premier modèle : **GPT-4o-mini** (via GitHub Models, gratuit)
+3. Configure le **System Prompt** comme un agent :
+   ```
+   Tu es un agent assistant commercial.
+   Tu as accès aux outils suivants :
+   - RECHERCHE_PRODUIT : pour chercher un produit dans le catalogue
+   - CALCULATEUR : pour faire des calculs de prix, remises, totaux
+   - RECHERCHE_WEB : pour trouver des informations sur le web
+   - ENVOYER_EMAIL : pour envoyer un email à un collègue
+
+   Quand l'utilisateur te pose une question :
+   1. Réfléchis à voix haute : quel outil utiliser et pourquoi ?
+   2. Indique l'outil choisi au format : [OUTIL: nom_outil]
+   3. Décris ce que tu ferais avec le résultat
+   4. Donne ta réponse finale
+
+   Si aucun outil n'est nécessaire, réponds directement.
+   ```
+4. **Teste avec ces scénarios** (envoie chaque question séparément) :
+   - "Combien coûtent 3 widgets à 45€ avec 20% de remise ?"
+   - "Est-ce qu'on a le produit XYZ en stock ?"
+   - "Envoie un récap de cette commande à mon manager"
+   - "Quelle est la capitale du Japon ?"
+   - "Trouve-moi les avis clients sur notre produit phare"
+
+5. **Note les résultats** dans un tableau :
+
+   | Question | Outil attendu | Outil choisi par le modèle | Correct ? |
+   |----------|--------------|---------------------------|-----------|
+   | Calcul remise | CALCULATEUR | ? | ✅/❌ |
+   | Stock produit | RECHERCHE_PRODUIT | ? | ✅/❌ |
+   | Récap par email | ENVOYER_EMAIL | ? | ✅/❌ |
+   | Capitale Japon | Aucun | ? | ✅/❌ |
+   | Avis clients | RECHERCHE_WEB | ? | ✅/❌ |
+
+6. **Ouvre un 2e modèle** côte à côte : **Mistral Large** ou **Llama 3** (via GitHub Models)
+7. Envoie **exactement les mêmes questions**
+8. Compare :
+   - Quel modèle choisit le bon outil le plus souvent ?
+   - Quel modèle raisonne de façon la plus claire ?
+   - Quel modèle est le plus rapide ?
+
+#### Exercice 2 — Tester un agent en local (100% gratuit et privé) (10 min)
+
+Scénario : ton client dit *"Nos données ne doivent JAMAIS quitter nos serveurs"*. Tu dois prouver qu'un agent peut tourner en local.
+
+1. Dans le **Model Catalog**, choisis un modèle **Local** :
+   - **Phi-3.5-mini** (petit, rapide, ~2 Go) — recommandé pour commencer
+   - Ou **Mistral 7B** (plus gros, meilleur raisonnement, ~4 Go)
+2. Clique **Download** → attends le téléchargement
+3. Une fois téléchargé → **"Load in Playground"**
+4. Utilise le **même system prompt d'agent** que l'exercice 1
+5. Teste les **mêmes questions**
+6. Compare avec les résultats cloud :
+
+   | Critère | Modèle cloud (GPT-4o-mini) | Modèle local (Phi-3.5) |
+   |---------|---------------------------|----------------------|
+   | Choix d'outil correct | X/5 | X/5 |
+   | Qualité du raisonnement | ⭐⭐⭐⭐ | ⭐⭐? |
+   | Rapidité | Rapide | Variable (selon ton PC) |
+   | Coût | Gratuit (GitHub) | Gratuit (local) |
+   | Données privées | Transite par GitHub | 🔒 100% local |
+
+7. **Conclusion à noter** :
+   - Pour un POC/démo → modèle cloud gratuit via GitHub Models
+   - Pour un client avec contraintes data → modèle local, mais qualité moindre
+   - Pour la production → Azure OpenAI (sécurisé + performant)
+
+#### Ce qu'il faut retenir sur AI Toolkit pour les agents
+
+```
+VS CODE AI TOOLKIT — TA STATION D'ESSAI POUR AGENTS
+
+Avant de recommander un modèle à un client pour un agent :
+  1. Teste le raisonnement (tool selection) sur 3-4 modèles
+  2. Compare cloud vs local (qualité vs confidentialité)
+  3. Documente tes résultats → argument de vente objectif
+
+C'est la différence entre :
+  ❌ "Je recommande GPT-4o parce que tout le monde l'utilise"
+  ✅ "J'ai testé 4 modèles sur vos cas d'usage. GPT-4o-mini offre le meilleur
+      rapport qualité/coût pour le raisonnement agent. Phi-3.5 est viable
+      en local pour les données sensibles mais avec une perte de 30% en précision."
+```
+
+---
+
+### 📊 Récapitulatif — Ta boîte à outils Agent (100% gratuit)
+
+À ce stade, tu as testé **4 outils** pour construire des agents. Voici quand utiliser lequel :
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    MATRICE DE CHOIX — OUTILS AGENT                      │
+├──────────────┬──────────────┬────────────────┬──────────────────────────┤
+│              │ PROTOTYPAGE  │  PRODUCTION    │  DONNÉES SENSIBLES      │
+│              │ (POC/démo)   │  (client)      │  (on-premise)           │
+├──────────────┼──────────────┼────────────────┼──────────────────────────┤
+│ Dify.ai      │ ⭐⭐⭐⭐⭐       │ ⭐⭐ (limité)    │ ⭐⭐⭐ (self-host possible) │
+│              │ Le plus      │ 200 msg        │ Open-source,            │
+│              │ rapide pour  │ gratuits puis   │ installable chez        │
+│              │ un POC avec  │ payant          │ le client               │
+│              │ RAG + Agent  │                │                          │
+├──────────────┼──────────────┼────────────────┼──────────────────────────┤
+│ n8n          │ ⭐⭐⭐⭐        │ ⭐⭐⭐⭐⭐         │ ⭐⭐⭐⭐ (self-host)        │
+│              │ Plus long à  │ Le meilleur    │ Self-hosted,            │
+│              │ configurer   │ pour les       │ mais LLM externe        │
+│              │ mais plus    │ intégrations   │ sauf si local           │
+│              │ flexible     │ SI client      │                          │
+├──────────────┼──────────────┼────────────────┼──────────────────────────┤
+│ AI Toolkit   │ ⭐⭐⭐⭐        │ ⭐ (dev only)   │ ⭐⭐⭐⭐⭐                   │
+│ (VS Code)    │ Idéal pour   │ Pas fait pour  │ Modèles 100%           │
+│              │ tester les   │ la prod        │ locaux, rien ne         │
+│              │ modèles et   │                │ sort de la machine      │
+│              │ le prompting │                │                          │
+├──────────────┼──────────────┼────────────────┼──────────────────────────┤
+│ ChatGPT GPTs │ ⭐⭐⭐          │ ⭐⭐             │ ⭐ (données chez OpenAI) │
+│              │ Le plus      │ Limité aux     │ Pas de contrôle         │
+│              │ simple       │ capacités      │ sur les données         │
+│              │ à créer      │ de ChatGPT     │                          │
+└──────────────┴──────────────┴────────────────┴──────────────────────────┘
+
+WORKFLOW CONSULTANT RECOMMANDÉ :
+  1. 🧪 TEST modèle   → AI Toolkit (comparer les modèles)
+  2. 🎨 PROTOTYPE      → Dify.ai (POC visuel en 1h)
+  3. 🎤 DÉMO client    → Dify.ai (URL partageable)
+  4. ✅ Client valide  → n8n (production avec intégrations SI)
+```
+
+---
+
 ## Jour 6 — Le Cloud pour l'IA
 
 ### Comprendre (30 min)
